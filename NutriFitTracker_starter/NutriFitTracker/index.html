@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>NutriFit Tracker - Meal & Fitness Tracking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<header>
+    <h1>NutriFit Tracker</h1>
+    <p class="tagline">Simple meal and fitness tracking prototype (Sprint 1)</p>
+</header>
+
+<main>
+    <section id="meal-section">
+        <h2>Log Meal</h2>
+        <form id="meal-form">
+            <label>
+                Meal Name:
+                <input type="text" id="meal-name" required />
+            </label>
+            <label>
+                Calories:
+                <input type="number" id="meal-calories" min="0" required />
+            </label>
+            <label>
+                Category:
+                <select id="meal-category">
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                </select>
+            </label>
+            <button type="submit">Add Meal</button>
+        </form>
+        <ul id="meal-list"></ul>
+    </section>
+
+    <section id="workout-section">
+        <h2>Log Workout</h2>
+        <form id="workout-form">
+            <label>
+                Workout Type:
+                <input type="text" id="workout-type" required />
+            </label>
+            <label>
+                Duration (minutes):
+                <input type="number" id="workout-duration" min="0" required />
+            </label>
+            <label>
+                Calories Burned:
+                <input type="number" id="workout-calories" min="0" required />
+            </label>
+            <button type="submit">Add Workout</button>
+        </form>
+        <ul id="workout-list"></ul>
+    </section>
+
+    <section id="dashboard-section">
+        <h2>Daily Summary</h2>
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Total Meal Calories</h3>
+                <p id="total-meal-calories">0</p>
+            </div>
+            <div class="card">
+                <h3>Total Workout Calories</h3>
+                <p id="total-workout-calories">0</p>
+            </div>
+            <div class="card">
+                <h3>Net Calories</h3>
+                <p id="net-calories">0</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>IT488 Agile Project - Prototype built with HTML, CSS, and JavaScript.</p>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
