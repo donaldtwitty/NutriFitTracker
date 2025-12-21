@@ -3,7 +3,9 @@
 
 const state = {
     meals: [],
-    workouts: []
+    workouts: [],
+    editingMealId: null,
+    editingWorkoutId: null
 };
 
 function addMeal(name, calories, category) {
@@ -17,6 +19,21 @@ function addMeal(name, calories, category) {
     return meal;
 }
 
+function updateMeal(id, name, calories, category){
+    const meal= state.meals.find(m => m.id === id);
+    if (meal) {
+        meal.name = name;
+        meal.calories = Number(calories) || 0;
+        meal.category = category;
+        return meal;
+    }
+    return null;
+}
+
+function deleteMeal(id) {
+    state.meals = state.meals.filter(m => m.id !== id);
+}
+
 function addWorkout(type, duration, calories) {
     const workout = {
         id: Date.now().toString(),
@@ -26,6 +43,21 @@ function addWorkout(type, duration, calories) {
     };
     state.workouts.push(workout);
     return workout;
+}
+
+function updateWorkout(id, type, duration, calories){
+    const workout= state.workouts.find(w => w.id === id);
+    if (workout) {
+        workout.type = type;
+        workout.duration = Number(duration) || 0;
+        workout.calories = Number(calories) || 0;
+        return workout;
+    }
+    return null;
+}
+
+function deleteWorkout(id) {
+    state.workouts = state.workouts.filter(w => w.id !== id);
 }
 
 function calculateTotals() {
@@ -38,6 +70,52 @@ function calculateTotals() {
     };
 }
 
+function editMeal(id) {
+    const meal = state.meals.find(m => m.id === id);
+    if (!meal) return;
+
+    state.editingMealId = id;
+
+    document.getElementById("meal-name").value = meal.name;
+    document.getElementById("meal-calories").value = meal.calories;
+    document.getElementById("meal-category").value = meal.category;
+
+    const submitButton = document.querySelector("#meal-form button[type='submit']");
+    submitButton.textContent = "Update Meal";
+
+    document.getElementById("meal-name").focus();
+}
+
+function cancelEdit(){
+    state.editingMealId = null;
+    document.getElementById("meal-form").reset();
+    const submitButton = document.querySelector("#meal-form button[type='submit']");
+    submitButton.textContent = "Add Meal";
+}
+
+function editWorkout(id){
+    const workout = state.workouts.find(w => w.id === id);
+    if (!workout) return;
+
+    state.editingWorkoutId = id;
+
+    document.getElementById("workout-type").value = workout.type;
+    document.getElementById("workout-duration").value = workout.duration;
+    document.getElementById("workout-calories").value = workout.calories;
+
+    const submitButton = document.querySelector("#workout-form button[type='submit']");
+    submitButton.textContent = "Update Workout";
+
+    document.getElementById("workout-type").focus();
+}
+
+function cancelWorkoutEdit(){
+    state.editingWorkoutId = null;
+    document.getElementById("workout-form").reset();
+    const submitButton = document.querySelector("#workout-form button[type='submit']");
+    submitButton.textContent = "Add Workout";
+}
+
 function renderLists() {
     const mealList = document.getElementById("meal-list");
     const workoutList = document.getElementById("workout-list");
@@ -48,35 +126,46 @@ function renderLists() {
     state.meals.forEach(meal => {
         const li = document.createElement("li");
         li.textContent = `${meal.name} (${meal.category}) - ${meal.calories} cal`;
-        const btn = document.createElement("button");
-        btn.textContent = "Delete";
-        btn.addEventListener("click", () => {
-            deleteItem("meal", meal.id);
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => {
+            editMeal(meal.id);
         });
-        li.appendChild(btn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", () => {
+            deleteMeal(meal.id);
+            updateDashboard();
+        });
+
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
         mealList.appendChild(li);
     });
 
     state.workouts.forEach(workout => {
         const li = document.createElement("li");
         li.textContent = `${workout.type} - ${workout.duration} min - ${workout.calories} cal`;
-        const btn = document.createElement("button");
-        btn.textContent = "Delete";
-        btn.addEventListener("click", () => {
-            deleteItem("workout", workout.id);
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () =>{
+            editWorkout(workout.id);
         });
-        li.appendChild(btn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", () => {
+            deleteWorkout(workout.id);
+            updateDashboard();
+        });
+
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
         workoutList.appendChild(li);
     });
-}
-
-function deleteItem(type, id) {
-    if (type === "meal") {
-        state.meals = state.meals.filter(m => m.id !== id);
-    } else {
-        state.workouts = state.workouts.filter(w => w.id !== id);
-    }
-    updateDashboard();
 }
 
 function updateDashboard() {
@@ -101,8 +190,16 @@ function wireUpForms() {
             alert("Please enter a meal name.");
             return;
         }
-        addMeal(name, calories, category);
-        mealForm.reset();
+
+        if (state.editingMealId){
+            updateMeal(state.editingMealId, name, calories, category);
+            cancelEdit();
+        }
+        else {
+            addMeal(name, calories, category);
+            mealForm.reset();
+        }
+
         updateDashboard();
     });
 
@@ -116,8 +213,16 @@ function wireUpForms() {
             alert("Please enter a workout type.");
             return;
         }
-        addWorkout(type, duration, calories);
-        workoutForm.reset();
+
+        if (state.editingWorkoutId){
+            updateWorkout(state.editingWorkoutId, type, duration, calories);
+            cancelWorkoutEdit();
+        }
+        else{
+            addWorkout(type, duration, calories);
+            workoutForm.reset();
+        }
+
         updateDashboard();
     });
 }
