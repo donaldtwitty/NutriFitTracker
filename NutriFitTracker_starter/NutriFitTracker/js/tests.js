@@ -14,7 +14,14 @@ function assertEqual(actual, expected, message) {
 function runNutriFitTests() {
     console.log("Running NutriFit Tracker tests...");
 
-    // Reset state
+    // Reset localStorage so persisted data doesn't break tests
+    if (window.__NutriFit && window.__NutriFit.__storage) {
+        window.__NutriFit.__storage.clearAllStorage();
+    } else if (window.localStorage) {
+        localStorage.clear();
+    }
+
+    // Reset in-memory state
     window.__NutriFit.state.meals = [];
     window.__NutriFit.state.workouts = [];
 
