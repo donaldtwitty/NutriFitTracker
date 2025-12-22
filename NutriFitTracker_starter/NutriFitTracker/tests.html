@@ -2,13 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NutriFit Tracker - Test Runner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
-<h1>NutriFit Tracker - Basic Test Runner</h1>
-<p>Open the browser console (F12) to see test results.</p>
+    <div class="container">
+        <h1>🧪 NutriFit Tracker - Test Runner</h1>
+        <div class="info">
+            <strong>📝 Test Coverage:</strong>
+            <ul>
+                <li>Meal operations (add, update, delete)</li>
+                <li>Workout operations (add, update, delete)</li>
+                <li>Calorie calculations and net totals</li>
+                <li>Edge cases and error handling</li>
+            </ul>
+        </div>
+        <button onclick="runTests()">🚀 Run Tests</button>
+        <div id="console-output"></div>
+    </div>
 
-<script src="js/app.js"></script>
-<script src="js/tests.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/tests.js"></script>
+    <script>
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function captureConsole() {
+            consoleOutput.textContent = '';
+            
+            console.log = function(...args) {
+                originalLog.apply(console, args);
+                consoleOutput.textContent += args.join(' ') + '\n';
+            };
+            
+            console.error = function(...args) {
+                originalError.apply(console, args);
+                consoleOutput.textContent += args.join(' ') + '\n';
+            };
+        }
+        
+        function runTests() {
+            captureConsole();
+            runNutriFitTests();
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', runTests);
+    </script>
 </body>
 </html>
