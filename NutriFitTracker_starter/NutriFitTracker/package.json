@@ -1,0 +1,13 @@
+{
+  "name": "nutrifit-tracker",
+  "version": "1.0.0",
+  "description": "A simple nutrition and fitness tracking application",
+  "main": "js/app.js",
+  "scripts": {
+    "test": "node run-tests.js",
+    "test:browser": "echo 'Open tests.html in your browser to run tests'"
+  },
+  "keywords": ["nutrition", "fitness", "tracker", "calories"],
+  "author": "",
+  "license": "MIT"
+}
