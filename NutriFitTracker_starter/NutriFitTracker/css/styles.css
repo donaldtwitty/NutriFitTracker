@@ -112,3 +112,16 @@ footer {
     font-size: 0.8rem;
     background: #e9ecef;
 }
+
+.btn-edit{
+    background:#0c6efd;
+}
+.btn-edit:hover{
+    background:#0b5ed7;
+}
+.btn-delete{
+    background:#dc3545;
+}
+.btn-delete:hover{
+    background:#bb2d3b;
+}
