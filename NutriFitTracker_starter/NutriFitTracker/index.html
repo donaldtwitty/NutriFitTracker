@@ -7,88 +7,222 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
-    <h1>NutriFit Tracker</h1>
-    <p class="tagline">Track meals, workouts, and your net calories.</p>
+  <header class="app-header">
+    <div class="container">
+      <h1>NutriFit Tracker</h1>
+      <p class="tagline">Track meals, workouts, and your net calories.</p>
+    </div>
   </header>
 
-  <main>
-    <section>
-      <h2>Meal Logging</h2>
-      <form id="meal-form">
-        <label>
-          Meal name
-          <input id="meal-name" type="text" placeholder="e.g., Chicken bowl" required />
-        </label>
+  <main class="container">
+    <div class="grid">
+      <!-- Meals -->
+      <section class="panel" aria-labelledby="meal-title">
+        <h2 id="meal-title">Meal Logging</h2>
 
-        <label>
-          Calories
-          <input id="meal-calories" type="number" min="0" step="1" placeholder="e.g., 650" />
-        </label>
+        <form id="meal-form" class="form">
+          <label>
+            Meal name
+            <input id="meal-name" type="text" placeholder="e.g., Chicken bowl" required />
+          </label>
 
-        <label>
-          Category
-          <select id="meal-category" required>
-            <option value="" selected disabled>Select a category</option>
-            <option value="breakfast">Breakfast</option>
-            <option value="lunch">Lunch</option>
-            <option value="dinner">Dinner</option>
-            <option value="snack">Snack</option>
-          </select>
-        </label>
+          <label>
+            Calories
+            <input id="meal-calories" type="number" min="0" step="1" placeholder="e.g., 650" required />
+          </label>
 
-        <button type="submit">Add Meal</button>
-        <button id="meal-cancel" type="button">Cancel</button>
-      </form>
+          <label>
+            Category
+            <select id="meal-category" required>
+              <option value="" selected disabled>Select a category</option>
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+          </label>
 
-      <ul id="meal-list"></ul>
-    </section>
+          <button id="meal-submit" type="submit" class="btn btn-primary">Add Meal</button>
+          <button id="meal-cancel" type="button" class="btn btn-ghost hidden">Cancel Edit</button>
+        </form>
 
-    <section>
-      <h2>Workout Logging</h2>
-      <form id="workout-form">
-        <label>
-          Workout type
-          <input id="workout-type" type="text" placeholder="e.g., Run" required />
-        </label>
-
-        <label>
-          Duration (min)
-          <input id="workout-duration" type="number" min="0" step="1" placeholder="e.g., 30" />
-        </label>
-
-        <label>
-          Calories burned
-          <input id="workout-calories" type="number" min="0" step="1" placeholder="e.g., 300" />
-        </label>
-
-        <button type="submit">Add Workout</button>
-        <button id="workout-cancel" type="button">Cancel</button>
-      </form>
-
-      <ul id="workout-list"></ul>
-    </section>
-
-    <section>
-      <h2>Dashboard</h2>
-      <div class="dashboard-grid">
-        <div class="card">
-          <div>Total Meal Calories</div>
-          <div id="total-meal-calories">0</div>
+        <div class="history">
+          <div class="history-head">
+            <h3>Meal History</h3>
+            <p id="meal-empty" class="muted">No meals yet — add one above.</p>
+          </div>
+          <ul id="meal-list" class="list" aria-live="polite"></ul>
         </div>
-        <div class="card">
-          <div>Total Workout Calories</div>
-          <div id="total-workout-calories">0</div>
+      </section>
+
+      <!-- Workouts -->
+      <section class="panel" aria-labelledby="workout-title">
+        <h2 id="workout-title">Workout Logging</h2>
+
+        <form id="workout-form" class="form">
+          <label>
+            Workout type
+            <input id="workout-type" type="text" placeholder="e.g., Run" required />
+          </label>
+
+          <label>
+            Duration (min)
+            <input id="workout-duration" type="number" min="0" step="1" placeholder="e.g., 30" required />
+          </label>
+
+          <label>
+            Calories burned
+            <input id="workout-calories" type="number" min="0" step="1" placeholder="e.g., 300" required />
+          </label>
+
+          <button id="workout-submit" type="submit" class="btn btn-primary">Add Workout</button>
+          <button id="workout-cancel" type="button" class="btn btn-ghost hidden">Cancel Edit</button>
+        </form>
+
+        <div class="history">
+          <div class="history-head">
+            <h3>Recent Workouts (last 5)</h3>
+            <p id="workout-empty" class="muted">No workouts yet — add one above.</p>
+          </div>
+          <ul id="workout-list" class="list" aria-live="polite"></ul>
         </div>
-        <div class="card">
-          <div>Net Calories</div>
-          <div id="net-calories">0</div>
+      </section>
+
+      <!-- Dashboard -->
+      <section class="panel" aria-labelledby="dash-title">
+        <h2 id="dash-title">Dashboard</h2>
+
+        <div class="dashboard">
+          <div class="card">
+            <div class="card-label">Total Meal Calories</div>
+            <div id="total-meal-calories" class="card-value">0</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Total Workout Calories</div>
+            <div id="total-workout-calories" class="card-value">0</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Net Calories</div>
+            <div id="net-calories" class="card-value">0</div>
+          </div>
         </div>
+
+        <div class="dash-actions">
+          <button id="clear-all" class="btn btn-danger" type="button">Clear All Data</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Calendar -->
+    <section class="panel calendar" aria-labelledby="calendar-title">
+      <div class="calendar-top">
+        <h2 id="calendar-title">Calendar</h2>
+
+        <div class="calendar-nav">
+          <button id="cal-prev" class="btn btn-ghost" type="button" aria-label="Previous month">‹</button>
+          <div id="cal-month" class="calendar-month" aria-live="polite"></div>
+          <button id="cal-next" class="btn btn-ghost" type="button" aria-label="Next month">›</button>
+        </div>
+      </div>
+
+      <div class="calendar-grid" id="calendar-grid" aria-label="Meal and workout calendar"></div>
+
+      <div class="calendar-legend">
+        <span class="legend-item"><span class="dot dot-meal"></span> Meals</span>
+        <span class="legend-item"><span class="dot dot-workout"></span> Workouts</span>
+        <span class="legend-hint muted">Click a past day or today to view, add, or edit.</span>
       </div>
     </section>
   </main>
 
-  <footer>NutriFit Tracker • Prototype</footer>
+  <!-- Day modal -->
+  <div id="day-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="day-modal-title">
+    <div class="modal-backdrop" data-close="true"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="day-modal-title">Entries for <span id="day-modal-date"></span></h3>
+        <button class="icon-btn" id="day-modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-actions">
+          <button id="open-day-meal" class="btn btn-primary" type="button">Add Meal</button>
+          <button id="open-day-workout" class="btn btn-primary" type="button">Add Workout</button>
+        </div>
+
+        <div id="day-meal-form-wrap" class="hidden">
+          <h4 class="subhead">Meal</h4>
+          <form id="day-meal-form" class="form compact">
+            <label>
+              Meal name
+              <input id="day-meal-name" type="text" required />
+            </label>
+            <label>
+              Calories
+              <input id="day-meal-calories" type="number" min="0" step="1" required />
+            </label>
+            <label>
+              Category
+              <select id="day-meal-category" required>
+                <option value="" selected disabled>Select a category</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
+              </select>
+            </label>
+            <button id="day-meal-submit" type="submit" class="btn btn-primary">Save Meal</button>
+            <button id="day-meal-cancel" type="button" class="btn btn-ghost">Cancel</button>
+          </form>
+        </div>
+
+        <div id="day-workout-form-wrap" class="hidden">
+          <h4 class="subhead">Workout</h4>
+          <form id="day-workout-form" class="form compact">
+            <label>
+              Workout type
+              <input id="day-workout-type" type="text" required />
+            </label>
+            <label>
+              Duration (min)
+              <input id="day-workout-duration" type="number" min="0" step="1" required />
+            </label>
+            <label>
+              Calories burned
+              <input id="day-workout-calories" type="number" min="0" step="1" required />
+            </label>
+            <button id="day-workout-submit" type="submit" class="btn btn-primary">Save Workout</button>
+            <button id="day-workout-cancel" type="button" class="btn btn-ghost">Cancel</button>
+          </form>
+        </div>
+
+        <div class="day-summary">
+          <h4 class="subhead">That day</h4>
+          <div id="day-summary" class="muted">No entries yet.</div>
+
+          <div class="day-lists">
+            <div class="day-list-block">
+              <h5 class="minihead">Meals</h5>
+              <p id="day-meals-empty" class="muted">No meals logged.</p>
+              <ul id="day-meals-list" class="list" aria-live="polite"></ul>
+            </div>
+
+            <div class="day-list-block">
+              <h5 class="minihead">Workouts</h5>
+              <p id="day-workouts-empty" class="muted">No workouts logged.</p>
+              <ul id="day-workouts-list" class="list" aria-live="polite"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="container">NutriFit Tracker • Prototype</div>
+  </footer>
 
   <script src="app.js"></script>
 </body>
