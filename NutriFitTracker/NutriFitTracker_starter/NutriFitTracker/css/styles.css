@@ -1,0 +1,114 @@
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #f7f7f7;
+    color: #222;
+}
+
+header {
+    background: #0c6efd;
+    color: #fff;
+    padding: 1rem 1.5rem;
+}
+
+header h1 {
+    margin: 0;
+}
+
+.tagline {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+}
+
+main {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+section {
+    background: #fff;
+    border-radius: 6px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+h2 {
+    margin-top: 0;
+}
+
+form {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+}
+
+input, select, button {
+    padding: 0.4rem;
+    margin-top: 0.25rem;
+}
+
+button {
+    cursor: pointer;
+    background: #198754;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+}
+
+button:hover {
+    background: #157347;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+li button {
+    background: #dc3545;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+}
+
+.card {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+footer {
+    text-align: center;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    background: #e9ecef;
+}
