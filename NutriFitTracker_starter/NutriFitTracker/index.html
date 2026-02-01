@@ -142,6 +142,106 @@
           <button id="clear-all" class="btn btn-danger" type="button">Clear All Data</button>
         </div>
       </section>
+
+  <!-- ========================================================= -->
+  <!-- NEW: Goals section required by your provided JS -->
+  <!-- ========================================================= -->
+  <section id="goals-section" class="panel" aria-labelledby="goals-title" style="margin-top: 16px;">
+    <div class="panel-header">
+      <div class="panel-icon">🎯</div>
+      <h2 id="goals-title">Goals</h2>
+    </div>
+
+    <p id="weekRange" class="muted"></p>
+
+    <form id="weeklyGoalsForm" class="form">
+      <label>
+        Weekly Workouts
+        <input id="wkGoalWorkouts" type="number" min="0" step="1" />
+      </label>
+
+      <label>
+        Weekly Meals Logged
+        <input id="wkGoalMeals" type="number" min="0" step="1" />
+      </label>
+
+      <label>
+        Weekly Calories In
+        <input id="wkGoalCaloriesIn" type="number" min="0" step="1" />
+      </label>
+
+      <label>
+        Weekly Water (oz)
+        <input id="wkGoalWaterOz" type="number" min="0" step="1" />
+      </label>
+
+      <button class="btn" type="submit">Save Weekly Goals</button>
+    </form>
+
+    <div id="weeklyGoalsBox" class="panel-sub" style="margin-top: 10px;"></div>
+
+    <hr style="margin: 16px 0;" />
+
+    <p id="monthRange" class="muted"></p>
+
+    <form id="monthlyGoalsForm" class="form">
+      <label>
+        Monthly Workouts
+        <input id="moGoalWorkouts" type="number" min="0" step="1" />
+      </label>
+
+      <label>
+        Monthly Meals Logged
+        <input id="moGoalMeals" type="number" min="0" step="1" />
+      </label>
+
+      <label>
+        Monthly Calories In
+        <input id="moGoalCaloriesIn" type="number" min="0" step="1" />
+      </label>
+
+      <label>
+        Monthly Water (oz)
+        <input id="moGoalWaterOz" type="number" min="0" step="1" />
+      </label>
+
+      <button class="btn" type="submit">Save Monthly Goals</button>
+    </form>
+
+    <div id="monthlyGoalsBox" class="panel-sub" style="margin-top: 10px;"></div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- NEW: Water intake section required by your provided JS -->
+  <!-- ========================================================= -->
+  <section id="water-section" class="panel" aria-labelledby="water-title" style="margin-top: 16px;">
+    <div class="panel-header">
+      <div class="panel-icon">💧</div>
+      <h2 id="water-title">Water Intake</h2>
+    </div>
+
+    <div style="margin-bottom: 8px;">
+      <strong>Today:</strong> <span id="waterToday">0 oz</span>
+    </div>
+    <div id="waterStatus" class="muted"></div>
+
+    <div class="dash-actions" style="gap: 8px; display: flex; flex-wrap: wrap; margin-top: 10px;">
+      <button id="waterAdd8" class="btn" type="button">+8 oz</button>
+      <button id="waterAdd16" class="btn" type="button">+16 oz</button>
+      <button id="waterAdd24" class="btn" type="button">+24 oz</button>
+      <button id="waterReset" class="btn btn-danger" type="button">Reset</button>
+    </div>
+
+    <form id="waterManualForm" class="form" style="margin-top: 10px;">
+      <label>
+        Set manual water (oz)
+        <input id="waterManualOz" type="number" min="0" step="1" />
+      </label>
+      <button class="btn" type="submit">Set Water</button>
+    </form>
+  </section>
+
+
     </div>
 
     <!-- Calendar -->

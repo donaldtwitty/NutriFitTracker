@@ -1004,4 +1004,344 @@ if (typeof window !== "undefined") {
     calculateTotals,
     __storage: { STORAGE_KEYS, loadStateFromStorage, saveMealsToStorage, saveWorkoutsToStorage, clearAllStorage },
   };
+
+  // ============================================================
+// DASHBOARD ENHANCEMENTS: Titles + Weekly/Monthly Goals + Water
+// Works with your current NutriFit app:
+// - Reads state.meals + state.workouts (createdAt timestamps)
+// - Uses localStorage for goals + water logs
+// - Safe: if elements do not exist, module exits quietly
+// ============================================================
+
+const DASH_PLUS_KEYS = {
+  goals: "nutrifit_goals_v1",          // { week_<mondayISO>: {...}, month_<YYYY-MM>: {...} }
+  waterDaily: "nutrifit_water_daily_v1" // { "YYYY-MM-DD": ouncesNumber }
+};
+
+// ---------- Date helpers (ISO week + month) ----------
+function startOfISOWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = (day === 0 ? -6 : 1) - day; // move to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfISOWeek(date) {
+  const start = startOfISOWeek(date);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+function startOfMonthLocal(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfMonthLocal(date) {
+  const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function monthKey(date = new Date()) {
+  return `month_${date.getFullYear()}-${pad2(date.getMonth() + 1)}`; // month_2026-01
+}
+
+function weekKey(date = new Date()) {
+  const monday = startOfISOWeek(date);
+  return `week_${monday.getFullYear()}-${pad2(monday.getMonth() + 1)}-${pad2(monday.getDate())}`; // week_2026-01-20
+}
+
+function fmtISO(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function inRangeTS(ts, start, end) {
+  const n = Number(ts);
+  if (!Number.isFinite(n)) return false;
+  return n >= start.getTime() && n <= end.getTime();
+}
+
+// ---------- localStorage helpers ----------
+function lsGet(key, fallback) {
+  return safeJsonParse(localStorage.getItem(key), fallback);
+}
+
+function lsSet(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+// ---------- Titles / section headers ----------
+function ensureTitle(containerId, titleText) {
+  const box = $(containerId);
+  if (!box) return;
+
+  // prevent duplicates
+  if (box.dataset.hasTitle === "true") return;
+
+  const h = document.createElement("h3");
+  h.className = "dash-title"; // style in CSS if you want
+  h.textContent = titleText;
+
+  // Insert title as first child
+  box.insertBefore(h, box.firstChild);
+  box.dataset.hasTitle = "true";
+}
+
+function applyDashboardTitles() {
+  // These IDs are examples—adjust to YOUR containers if needed:
+  // Add titles only if those containers exist.
+  ensureTitle("dashboard-totals", "Dashboard Totals");
+  ensureTitle("meals-section", "Meals");
+  ensureTitle("workouts-section", "Recent Workouts");
+  ensureTitle("calendar-section", "Calendar");
+  ensureTitle("goals-section", "Goals");
+  ensureTitle("water-section", "Water Intake");
+}
+
+// ---------- Compute weekly/monthly totals from existing app state ----------
+function computeTotalsForRange(start, end) {
+  const meals = (state.meals || []).filter(m => inRangeTS(m.createdAt, start, end));
+  const workouts = (state.workouts || []).filter(w => inRangeTS(w.createdAt, start, end));
+
+  const mealCalories = meals.reduce((s, m) => s + (Number(m.calories) || 0), 0);
+  const burned = workouts.reduce((s, w) => s + (Number(w.caloriesBurned) || 0), 0);
+
+  // Water daily logs
+  const waterDaily = lsGet(DASH_PLUS_KEYS.waterDaily, {});
+  let waterOz = 0;
+  if (waterDaily && typeof waterDaily === "object") {
+    for (const [iso, oz] of Object.entries(waterDaily)) {
+      const d = parseISODateLocal(iso);
+      if (d >= start && d <= end) waterOz += Number(oz) || 0;
+    }
+  }
+
+  return {
+    mealsCount: meals.length,
+    workoutsCount: workouts.length,
+    caloriesIn: Math.round(mealCalories),
+    caloriesBurned: Math.round(burned),
+    netCalories: Math.round(mealCalories - burned),
+    waterOz: Math.round(waterOz),
+  };
+}
+
+// ---------- Goals storage ----------
+function getGoalsState() {
+  return lsGet(DASH_PLUS_KEYS.goals, {});
+}
+
+function setGoalsState(next) {
+  lsSet(DASH_PLUS_KEYS.goals, next);
+}
+
+function defaultGoals() {
+  return {
+    workouts: 0,
+    meals: 0,
+    caloriesIn: 0,
+    waterOz: 0
+  };
+}
+
+function getGoalsFor(key) {
+  const all = getGoalsState();
+  if (!all[key]) {
+    all[key] = defaultGoals();
+    setGoalsState(all);
+  }
+  return all[key];
+}
+
+function saveGoalsFor(key, goalsObj) {
+  const all = getGoalsState();
+  all[key] = goalsObj;
+  setGoalsState(all);
+}
+
+// ---------- Progress helpers ----------
+function pct(current, goal) {
+  if (!goal || goal <= 0) return 0;
+  return Math.min(100, Math.round((current / goal) * 100));
+}
+
+function progressLine(label, current, goal) {
+  return `<div><strong>${label}:</strong> ${current} / ${goal} (${pct(current, goal)}%)</div>`;
+}
+
+// ---------- Render Weekly/Monthly Goals ----------
+function renderGoals() {
+  const weekBox = $("weeklyGoalsBox");
+  const monthBox = $("monthlyGoalsBox");
+  const weekRangeEl = $("weekRange");
+  const monthRangeEl = $("monthRange");
+
+  // If user hasn’t added the HTML containers, exit safely
+  if (!weekBox || !monthBox || !weekRangeEl || !monthRangeEl) return;
+
+  // Ranges
+  const now = new Date();
+  const wStart = startOfISOWeek(now);
+  const wEnd = endOfISOWeek(now);
+  const mStart = startOfMonthLocal(now);
+  const mEnd = endOfMonthLocal(now);
+
+  weekRangeEl.textContent = `Week: ${fmtISO(wStart)} to ${fmtISO(wEnd)}`;
+  monthRangeEl.textContent = `Month: ${fmtISO(mStart)} to ${fmtISO(mEnd)}`;
+
+  // Totals
+  const weekTotals = computeTotalsForRange(wStart, wEnd);
+  const monthTotals = computeTotalsForRange(mStart, mEnd);
+
+  // Goals
+  const wkKey = weekKey(now);
+  const moKey = monthKey(now);
+  const wkGoals = getGoalsFor(wkKey);
+  const moGoals = getGoalsFor(moKey);
+
+  weekBox.innerHTML = `
+    ${progressLine("Workouts", weekTotals.workoutsCount, wkGoals.workouts)}
+    ${progressLine("Meals Logged", weekTotals.mealsCount, wkGoals.meals)}
+    ${progressLine("Calories In", weekTotals.caloriesIn, wkGoals.caloriesIn)}
+    ${progressLine("Water (oz)", weekTotals.waterOz, wkGoals.waterOz)}
+    <div style="margin-top:6px;"><strong>Net Calories:</strong> ${weekTotals.netCalories}</div>
+  `;
+
+  monthBox.innerHTML = `
+    ${progressLine("Workouts", monthTotals.workoutsCount, moGoals.workouts)}
+    ${progressLine("Meals Logged", monthTotals.mealsCount, moGoals.meals)}
+    ${progressLine("Calories In", monthTotals.caloriesIn, moGoals.caloriesIn)}
+    ${progressLine("Water (oz)", monthTotals.waterOz, moGoals.waterOz)}
+    <div style="margin-top:6px;"><strong>Net Calories:</strong> ${monthTotals.netCalories}</div>
+  `;
+
+  // Fill forms (if inputs exist)
+  $("wkGoalWorkouts") && ($("wkGoalWorkouts").value = wkGoals.workouts);
+  $("wkGoalMeals") && ($("wkGoalMeals").value = wkGoals.meals);
+  $("wkGoalCaloriesIn") && ($("wkGoalCaloriesIn").value = wkGoals.caloriesIn);
+  $("wkGoalWaterOz") && ($("wkGoalWaterOz").value = wkGoals.waterOz);
+
+  $("moGoalWorkouts") && ($("moGoalWorkouts").value = moGoals.workouts);
+  $("moGoalMeals") && ($("moGoalMeals").value = moGoals.meals);
+  $("moGoalCaloriesIn") && ($("moGoalCaloriesIn").value = moGoals.caloriesIn);
+  $("moGoalWaterOz") && ($("moGoalWaterOz").value = moGoals.waterOz);
+}
+
+// ---------- Wire Goals forms ----------
+function wireGoals() {
+  const wkForm = $("weeklyGoalsForm");
+  const moForm = $("monthlyGoalsForm");
+  if (!wkForm && !moForm) return;
+
+  wkForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const k = weekKey(new Date());
+
+    const next = {
+      workouts: Number($("wkGoalWorkouts")?.value) || 0,
+      meals: Number($("wkGoalMeals")?.value) || 0,
+      caloriesIn: Number($("wkGoalCaloriesIn")?.value) || 0,
+      waterOz: Number($("wkGoalWaterOz")?.value) || 0,
+    };
+
+    saveGoalsFor(k, next);
+    renderGoals();
+  });
+
+  moForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const k = monthKey(new Date());
+
+    const next = {
+      workouts: Number($("moGoalWorkouts")?.value) || 0,
+      meals: Number($("moGoalMeals")?.value) || 0,
+      caloriesIn: Number($("moGoalCaloriesIn")?.value) || 0,
+      waterOz: Number($("moGoalWaterOz")?.value) || 0,
+    };
+
+    saveGoalsFor(k, next);
+    renderGoals();
+  });
+}
+
+// ---------- Water intake tracker ----------
+function getTodayWaterOz() {
+  const iso = todayISO();
+  const daily = lsGet(DASH_PLUS_KEYS.waterDaily, {});
+  return Number(daily?.[iso]) || 0;
+}
+
+function setTodayWaterOz(oz) {
+  const iso = todayISO();
+  const daily = lsGet(DASH_PLUS_KEYS.waterDaily, {});
+  daily[iso] = Math.max(0, Number(oz) || 0);
+  lsSet(DASH_PLUS_KEYS.waterDaily, daily);
+}
+
+function addTodayWaterOz(delta) {
+  setTodayWaterOz(getTodayWaterOz() + (Number(delta) || 0));
+}
+
+function renderWater() {
+  const todayEl = $("waterToday");
+  const statusEl = $("waterStatus");
+  if (!todayEl) return;
+
+  todayEl.textContent = `${getTodayWaterOz()} oz`;
+  if (statusEl) statusEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+}
+
+function wireWater() {
+  const add8 = $("waterAdd8");
+  const add16 = $("waterAdd16");
+  const add24 = $("waterAdd24");
+  const reset = $("waterReset");
+  const manualForm = $("waterManualForm");
+  const manualInput = $("waterManualOz");
+
+  // If no water section exists, exit
+  if (!add8 && !add16 && !add24 && !reset && !manualForm) return;
+
+  add8?.addEventListener("click", () => { addTodayWaterOz(8); renderWater(); renderGoals(); });
+  add16?.addEventListener("click", () => { addTodayWaterOz(16); renderWater(); renderGoals(); });
+  add24?.addEventListener("click", () => { addTodayWaterOz(24); renderWater(); renderGoals(); });
+
+  reset?.addEventListener("click", () => {
+    setTodayWaterOz(0);
+    renderWater();
+    renderGoals();
+  });
+
+  manualForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const oz = Number(manualInput?.value) || 0;
+    setTodayWaterOz(oz);
+    renderWater();
+    renderGoals();
+    manualForm.reset();
+  });
+}
+
+// ---------- Public functions to call from your app lifecycle ----------
+function dashPlusInit() {
+  applyDashboardTitles();
+  wireGoals();
+  wireWater();
+  renderWater();
+  renderGoals();
+}
+
+function dashPlusRender() {
+  // call on every render to keep progress live
+  applyDashboardTitles();
+  renderWater();
+  renderGoals();
+}
+
 }
