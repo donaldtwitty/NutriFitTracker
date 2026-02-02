@@ -16,12 +16,43 @@ const state = {
   editingMealId: null,
   editingWorkoutId: null,
 
+  // Optional UI filter (set by clicking a calendar day)
+  filterDayISO: null,              // "YYYY-MM-DD" or null
+
   // calendar / modal
   calendarMonth: startOfMonth(new Date()),
   selectedDayISO: null,            // "YYYY-MM-DD"
   dayEditingMealId: null,
   dayEditingWorkoutId: null,
 };
+
+// ---------- form validity helpers ----------
+// Keeps submit buttons disabled until form fields are valid.
+const _formValidityRefreshers = Object.create(null);
+
+function attachDisableWhenInvalid(formId, submitBtnId) {
+  const form = $(formId);
+  const submit = $(submitBtnId);
+  if (!form || !submit) return;
+
+  const refresh = () => {
+    // checkValidity() respects required/min/step/etc.
+    submit.disabled = !form.checkValidity();
+  };
+
+  form.addEventListener("input", refresh);
+  form.addEventListener("change", refresh);
+  // Keep Enter key submits safe in older browsers that might not block invalid submits.
+  form.addEventListener("submit", refresh);
+
+  refresh();
+  _formValidityRefreshers[formId] = refresh;
+}
+
+function refreshFormValidity(formId) {
+  const fn = _formValidityRefreshers[formId];
+  if (typeof fn === "function") fn();
+}
 
 function safeJsonParse(value, fallback) {
   try {
@@ -224,8 +255,17 @@ function renderMeals() {
   const empty = $("meal-empty");
   if (!list || !empty) return;
 
-  const mealsSorted = [...state.meals].sort((a, b) => b.createdAt - a.createdAt);
+  const filteredMeals = state.filterDayISO
+    ? state.meals.filter(m => sameISODate(m.createdAt, state.filterDayISO))
+    : state.meals;
+
+  const mealsSorted = [...filteredMeals].sort((a, b) => b.createdAt - a.createdAt);
   empty.classList.toggle("hidden", mealsSorted.length > 0);
+  if (mealsSorted.length === 0) {
+    empty.textContent = state.filterDayISO
+      ? "No meals for this date."
+      : "No meals yet — add one above.";
+  }
 
   clearEl(list);
 
@@ -267,10 +307,19 @@ function renderWorkouts() {
   const empty = $("workout-empty");
   if (!list || !empty) return;
 
-  const workoutsSorted = [...state.workouts].sort((a, b) => b.createdAt - a.createdAt);
+  const filteredWorkouts = state.filterDayISO
+    ? state.workouts.filter(w => sameISODate(w.createdAt, state.filterDayISO))
+    : state.workouts;
+
+  const workoutsSorted = [...filteredWorkouts].sort((a, b) => b.createdAt - a.createdAt);
   const recent = workoutsSorted.slice(0, 5);
 
   empty.classList.toggle("hidden", recent.length > 0);
+  if (recent.length === 0) {
+    empty.textContent = state.filterDayISO
+      ? "No workouts for this date."
+      : "No workouts yet — add one above.";
+  }
 
   clearEl(list);
 
@@ -316,8 +365,14 @@ function beginEditMeal(id) {
   $("meal-calories").value = meal.calories;
   $("meal-category").value = meal.category || "";
 
+<<<<<<< Updated upstream
   $("meal-submit").textContent = "Update Meal";
   $("meal-cancel").classList.remove("hidden");
+=======
+  $("edit-meal-modal").classList.remove("hidden");
+  refreshFormValidity("edit-meal-form");
+  $("edit-meal-name")?.focus();
+>>>>>>> Stashed changes
 }
 
 function cancelEditMeal() {
@@ -336,8 +391,14 @@ function beginEditWorkout(id) {
   $("workout-duration").value = w.duration;
   $("workout-calories").value = w.caloriesBurned;
 
+<<<<<<< Updated upstream
   $("workout-submit").textContent = "Update Workout";
   $("workout-cancel").classList.remove("hidden");
+=======
+  $("edit-workout-modal").classList.remove("hidden");
+  refreshFormValidity("edit-workout-form");
+  $("edit-workout-type")?.focus();
+>>>>>>> Stashed changes
 }
 
 function cancelEditWorkout() {
@@ -389,8 +450,11 @@ function renderCalendar() {
     const cellDate = new Date(month.getFullYear(), month.getMonth(), day, 12, 0, 0, 0);
     const iso = toISODateLocal(cellDate);
 
-    const mealsCount = state.meals.filter(m => sameISODate(m.createdAt, iso)).length;
-    const workoutsCount = state.workouts.filter(w => sameISODate(w.createdAt, iso)).length;
+    const mealEntries = state.meals.filter(m => sameISODate(m.createdAt, iso));
+    const workoutEntries = state.workouts.filter(w => sameISODate(w.createdAt, iso));
+
+    const mealCalories = mealEntries.reduce((s, m) => s + (Number(m.calories) || 0), 0);
+    const workoutCalories = workoutEntries.reduce((s, w) => s + (Number(w.caloriesBurned) || 0), 0);
 
     const cell = document.createElement("button");
     cell.type = "button";
@@ -398,6 +462,7 @@ function renderCalendar() {
     cell.dataset.iso = iso;
 
     if (iso === today) cell.classList.add("cal-today");
+    if (state.filterDayISO === iso) cell.classList.add("cal-selected");
 
     if (iso > today) {
       cell.classList.add("cal-future");
@@ -412,29 +477,41 @@ function renderCalendar() {
     const badges = document.createElement("div");
     badges.className = "cal-badges";
 
-    if (mealsCount > 0) {
+    if (mealCalories > 0) {
       const b = document.createElement("span");
       b.className = "badge";
       const dot = document.createElement("span");
       dot.className = "dot dot-meal";
       b.appendChild(dot);
-      b.appendChild(document.createTextNode(`${mealsCount} meal${mealsCount === 1 ? "" : "s"}`));
+      b.appendChild(document.createTextNode(`${Math.round(mealCalories)} cal`));
       badges.appendChild(b);
     }
-    if (workoutsCount > 0) {
+    if (workoutCalories > 0) {
       const b = document.createElement("span");
       b.className = "badge";
       const dot = document.createElement("span");
       dot.className = "dot dot-workout";
       b.appendChild(dot);
-      b.appendChild(document.createTextNode(`${workoutsCount} workout${workoutsCount === 1 ? "" : "s"}`));
+      b.appendChild(document.createTextNode(`${Math.round(workoutCalories)} burned`));
       badges.appendChild(b);
     }
 
     cell.appendChild(dateEl);
     cell.appendChild(badges);
 
-    cell.addEventListener("click", () => openDayModal(iso));
+    // Clicking the cell filters the main lists; clicking the date number opens the day modal.
+    cell.addEventListener("click", () => {
+      if (iso > today) return;
+      state.filterDayISO = (state.filterDayISO === iso) ? null : iso;
+      renderMeals();
+      renderWorkouts();
+      renderCalendar();
+    });
+
+    dateEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openDayModal(iso);
+    });
     grid.appendChild(cell);
   }
 }
@@ -632,6 +709,7 @@ function beginDayEditMeal(id) {
 
   const submit = $("day-meal-submit");
   if (submit) submit.textContent = "Update Meal";
+  refreshFormValidity("day-meal-form");
 }
 
 function beginDayEditWorkout(id) {
@@ -650,6 +728,7 @@ function beginDayEditWorkout(id) {
 
   const submit = $("day-workout-submit");
   if (submit) submit.textContent = "Update Workout";
+  refreshFormValidity("day-workout-form");
 }
 
 function resetDayMealForm() {
@@ -657,6 +736,7 @@ function resetDayMealForm() {
   $("day-meal-form")?.reset();
   const submit = $("day-meal-submit");
   if (submit) submit.textContent = "Save Meal";
+  refreshFormValidity("day-meal-form");
 }
 
 function resetDayWorkoutForm() {
@@ -664,6 +744,7 @@ function resetDayWorkoutForm() {
   $("day-workout-form")?.reset();
   const submit = $("day-workout-submit");
   if (submit) submit.textContent = "Save Workout";
+  refreshFormValidity("day-workout-form");
 }
 
 // ---------- main render ----------
@@ -682,6 +763,14 @@ function renderAll() {
 
 // ---------- events ----------
 function wireEvents() {
+  // Disable submit buttons until each form is valid.
+  attachDisableWhenInvalid("meal-form", "meal-submit");
+  attachDisableWhenInvalid("workout-form", "workout-submit");
+  attachDisableWhenInvalid("edit-meal-form", "edit-meal-submit");
+  attachDisableWhenInvalid("edit-workout-form", "edit-workout-submit");
+  attachDisableWhenInvalid("day-meal-form", "day-meal-submit");
+  attachDisableWhenInvalid("day-workout-form", "day-workout-submit");
+
   // Meal form (top)
   const mealForm = $("meal-form");
   if (mealForm) {
@@ -694,6 +783,7 @@ function wireEvents() {
 
       if (!name || category === "") return;
 
+<<<<<<< Updated upstream
       if (state.editingMealId) {
         updateMeal(state.editingMealId, { name, calories, category });
         cancelEditMeal();
@@ -706,6 +796,35 @@ function wireEvents() {
   }
 
   $("meal-cancel")?.addEventListener("click", cancelEditMeal);
+=======
+        addMeal(name, calories, category);
+        mealForm.reset();
+        refreshFormValidity("meal-form");
+    });
+  }
+
+  // Edit Meal Modal
+  $("edit-meal-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!state.editingMealId) return;
+
+    const name = $("edit-meal-name").value.trim();
+    const calories = $("edit-meal-calories").value;
+    const category = $("edit-meal-category").value;
+
+    if (!name || !category) return;
+
+    updateMeal(state.editingMealId, { name, calories, category });
+    closeEditMeal();
+    refreshFormValidity("edit-meal-form");
+  });
+
+  $("edit-meal-cancel")?.addEventListener("click", closeEditMeal);
+  $("edit-meal-close")?.addEventListener("click", closeEditMeal);
+  $("edit-meal-modal")?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal-backdrop")) closeEditMeal();
+  });
+>>>>>>> Stashed changes
 
   // Workout form (top)
   const workoutForm = $("workout-form");
@@ -727,10 +846,35 @@ function wireEvents() {
 
       addWorkout(type, duration, caloriesBurned);
       workoutForm.reset();
+      refreshFormValidity("workout-form");
     });
   }
 
+<<<<<<< Updated upstream
   $("workout-cancel")?.addEventListener("click", cancelEditWorkout);
+=======
+  // Edit Workout Modal events
+  $("edit-workout-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!state.editingWorkoutId) return;
+
+    const type = $("edit-workout-type").value.trim();
+    const duration = $("edit-workout-duration").value;
+    const calories = $("edit-workout-calories").value;
+
+    if (!type) return;
+
+    updateWorkout(state.editingWorkoutId, { type, duration, caloriesBurned: calories });
+    closeEditWorkout();
+    refreshFormValidity("edit-workout-form");
+  });
+
+  $("edit-workout-cancel")?.addEventListener("click", closeEditWorkout);
+  $("edit-workout-close")?.addEventListener("click", closeEditWorkout);
+  $("edit-workout-modal")?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal-backdrop")) closeEditWorkout();
+  });
+>>>>>>> Stashed changes
 
   // Clear all
   $("clear-all")?.addEventListener("click", () => {
@@ -764,6 +908,7 @@ function wireEvents() {
     $("day-meal-form-wrap")?.classList.remove("hidden");
     $("day-workout-form-wrap")?.classList.add("hidden");
     resetDayMealForm();
+    refreshFormValidity("day-meal-form");
     $("day-meal-name")?.focus();
   });
 
@@ -775,6 +920,7 @@ function wireEvents() {
     $("day-workout-form-wrap")?.classList.remove("hidden");
     $("day-meal-form-wrap")?.classList.add("hidden");
     resetDayWorkoutForm();
+    refreshFormValidity("day-workout-form");
     $("day-workout-type")?.focus();
   });
 
