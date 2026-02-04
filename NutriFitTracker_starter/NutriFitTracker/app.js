@@ -1014,15 +1014,15 @@ if (typeof window !== "undefined") {
 // ============================================================
 
 const DASH_PLUS_KEYS = {
-  goals: "nutrifit_goals_v1",          // { week_<mondayISO>: {...}, month_<YYYY-MM>: {...} }
-  waterDaily: "nutrifit_water_daily_v1" // { "YYYY-MM-DD": ouncesNumber }
+  goals: "nutrifit_goals_v1",
+  waterDaily: "nutrifit_water_daily_v1",
 };
 
 // ---------- Date helpers (ISO week + month) ----------
 function startOfISOWeek(date) {
   const d = new Date(date);
   const day = d.getDay(); // 0=Sun..6=Sat
-  const diff = (day === 0 ? -6 : 1) - day; // move to Monday
+  const diff = (day === 0 ? -6 : 1) - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -1049,12 +1049,12 @@ function endOfMonthLocal(date) {
 }
 
 function monthKey(date = new Date()) {
-  return `month_${date.getFullYear()}-${pad2(date.getMonth() + 1)}`; // month_2026-01
+  return `month_${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
 }
 
 function weekKey(date = new Date()) {
   const monday = startOfISOWeek(date);
-  return `week_${monday.getFullYear()}-${pad2(monday.getMonth() + 1)}-${pad2(monday.getDate())}`; // week_2026-01-20
+  return `week_${monday.getFullYear()}-${pad2(monday.getMonth() + 1)}-${pad2(monday.getDate())}`;
 }
 
 function fmtISO(d) {
@@ -1080,22 +1080,17 @@ function lsSet(key, value) {
 function ensureTitle(containerId, titleText) {
   const box = $(containerId);
   if (!box) return;
-
-  // prevent duplicates
   if (box.dataset.hasTitle === "true") return;
 
   const h = document.createElement("h3");
-  h.className = "dash-title"; // style in CSS if you want
+  h.className = "dash-title";
   h.textContent = titleText;
 
-  // Insert title as first child
   box.insertBefore(h, box.firstChild);
   box.dataset.hasTitle = "true";
 }
 
 function applyDashboardTitles() {
-  // These IDs are examples—adjust to YOUR containers if needed:
-  // Add titles only if those containers exist.
   ensureTitle("dashboard-totals", "Dashboard Totals");
   ensureTitle("meals-section", "Meals");
   ensureTitle("workouts-section", "Recent Workouts");
@@ -1106,15 +1101,15 @@ function applyDashboardTitles() {
 
 // ---------- Compute weekly/monthly totals from existing app state ----------
 function computeTotalsForRange(start, end) {
-  const meals = (state.meals || []).filter(m => inRangeTS(m.createdAt, start, end));
-  const workouts = (state.workouts || []).filter(w => inRangeTS(w.createdAt, start, end));
+  const meals = (state.meals || []).filter((m) => inRangeTS(m.createdAt, start, end));
+  const workouts = (state.workouts || []).filter((w) => inRangeTS(w.createdAt, start, end));
 
   const mealCalories = meals.reduce((s, m) => s + (Number(m.calories) || 0), 0);
   const burned = workouts.reduce((s, w) => s + (Number(w.caloriesBurned) || 0), 0);
 
-  // Water daily logs
   const waterDaily = lsGet(DASH_PLUS_KEYS.waterDaily, {});
   let waterOz = 0;
+
   if (waterDaily && typeof waterDaily === "object") {
     for (const [iso, oz] of Object.entries(waterDaily)) {
       const d = parseISODateLocal(iso);
@@ -1142,12 +1137,7 @@ function setGoalsState(next) {
 }
 
 function defaultGoals() {
-  return {
-    workouts: 0,
-    meals: 0,
-    caloriesIn: 0,
-    waterOz: 0
-  };
+  return { workouts: 0, meals: 0, caloriesIn: 0, waterOz: 0 };
 }
 
 function getGoalsFor(key) {
@@ -1182,10 +1172,8 @@ function renderGoals() {
   const weekRangeEl = $("weekRange");
   const monthRangeEl = $("monthRange");
 
-  // If user hasn’t added the HTML containers, exit safely
   if (!weekBox || !monthBox || !weekRangeEl || !monthRangeEl) return;
 
-  // Ranges
   const now = new Date();
   const wStart = startOfISOWeek(now);
   const wEnd = endOfISOWeek(now);
@@ -1195,11 +1183,9 @@ function renderGoals() {
   weekRangeEl.textContent = `Week: ${fmtISO(wStart)} to ${fmtISO(wEnd)}`;
   monthRangeEl.textContent = `Month: ${fmtISO(mStart)} to ${fmtISO(mEnd)}`;
 
-  // Totals
   const weekTotals = computeTotalsForRange(wStart, wEnd);
   const monthTotals = computeTotalsForRange(mStart, mEnd);
 
-  // Goals
   const wkKey = weekKey(now);
   const moKey = monthKey(now);
   const wkGoals = getGoalsFor(wkKey);
@@ -1221,7 +1207,6 @@ function renderGoals() {
     <div style="margin-top:6px;"><strong>Net Calories:</strong> ${monthTotals.netCalories}</div>
   `;
 
-  // Fill forms (if inputs exist)
   $("wkGoalWorkouts") && ($("wkGoalWorkouts").value = wkGoals.workouts);
   $("wkGoalMeals") && ($("wkGoalMeals").value = wkGoals.meals);
   $("wkGoalCaloriesIn") && ($("wkGoalCaloriesIn").value = wkGoals.caloriesIn);
@@ -1305,12 +1290,23 @@ function wireWater() {
   const manualForm = $("waterManualForm");
   const manualInput = $("waterManualOz");
 
-  // If no water section exists, exit
   if (!add8 && !add16 && !add24 && !reset && !manualForm) return;
 
-  add8?.addEventListener("click", () => { addTodayWaterOz(8); renderWater(); renderGoals(); });
-  add16?.addEventListener("click", () => { addTodayWaterOz(16); renderWater(); renderGoals(); });
-  add24?.addEventListener("click", () => { addTodayWaterOz(24); renderWater(); renderGoals(); });
+  add8?.addEventListener("click", () => {
+    addTodayWaterOz(8);
+    renderWater();
+    renderGoals();
+  });
+  add16?.addEventListener("click", () => {
+    addTodayWaterOz(16);
+    renderWater();
+    renderGoals();
+  });
+  add24?.addEventListener("click", () => {
+    addTodayWaterOz(24);
+    renderWater();
+    renderGoals();
+  });
 
   reset?.addEventListener("click", () => {
     setTodayWaterOz(0);
@@ -1338,7 +1334,6 @@ function dashPlusInit() {
 }
 
 function dashPlusRender() {
-  // call on every render to keep progress live
   applyDashboardTitles();
   renderWater();
   renderGoals();
