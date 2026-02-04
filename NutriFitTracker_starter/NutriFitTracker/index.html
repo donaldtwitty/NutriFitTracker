@@ -4,13 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NutriFit Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏃</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="app-header">
     <div class="container">
-      <h1>NutriFit Tracker</h1>
-      <p class="tagline">Track meals, workouts, and your net calories.</p>
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="logo-icon">🏃</div>
+          <div>
+            <h1>NutriFit Tracker</h1>
+            <p class="tagline">Track meals, workouts, and your net calories.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -18,7 +29,10 @@
     <div class="grid">
       <!-- Meals -->
       <section class="panel" aria-labelledby="meal-title">
-        <h2 id="meal-title">Meal Logging</h2>
+        <div class="panel-header">
+          <div class="panel-icon">🍽️</div>
+          <h2 id="meal-title">Meal Logging</h2>
+        </div>
 
         <form id="meal-form" class="form">
           <label>
@@ -57,7 +71,10 @@
 
       <!-- Workouts -->
       <section class="panel" aria-labelledby="workout-title">
-        <h2 id="workout-title">Workout Logging</h2>
+        <div class="panel-header">
+          <div class="panel-icon">💪</div>
+          <h2 id="workout-title">Workout Logging</h2>
+        </div>
 
         <form id="workout-form" class="form">
           <label>
@@ -89,23 +106,35 @@
       </section>
 
       <!-- Dashboard -->
-      <section class="panel" aria-labelledby="dash-title">
-        <h2 id="dash-title">Dashboard</h2>
+      <section class="panel dashboard-panel" aria-labelledby="dash-title">
+        <div class="panel-header">
+          <div class="panel-icon">📊</div>
+          <h2 id="dash-title">Dashboard</h2>
+        </div>
 
         <div class="dashboard">
-          <div class="card">
-            <div class="card-label">Total Meal Calories</div>
-            <div id="total-meal-calories" class="card-value">0</div>
+          <div class="card card-meals">
+            <div class="card-icon">🍴</div>
+            <div class="card-content">
+              <div class="card-label">Total Meal Calories</div>
+              <div id="total-meal-calories" class="card-value">0</div>
+            </div>
           </div>
 
-          <div class="card">
-            <div class="card-label">Total Workout Calories</div>
-            <div id="total-workout-calories" class="card-value">0</div>
+          <div class="card card-workouts">
+            <div class="card-icon">🔥</div>
+            <div class="card-content">
+              <div class="card-label">Total Workout Calories</div>
+              <div id="total-workout-calories" class="card-value">0</div>
+            </div>
           </div>
 
-          <div class="card">
-            <div class="card-label">Net Calories</div>
-            <div id="net-calories" class="card-value">0</div>
+          <div class="card card-net">
+            <div class="card-icon">⚖️</div>
+            <div class="card-content">
+              <div class="card-label">Net Calories</div>
+              <div id="net-calories" class="card-value">0</div>
+            </div>
           </div>
         </div>
 
@@ -118,7 +147,10 @@
     <!-- Calendar -->
     <section class="panel calendar" aria-labelledby="calendar-title">
       <div class="calendar-top">
-        <h2 id="calendar-title">Calendar</h2>
+        <div class="panel-header">
+          <div class="panel-icon">📅</div>
+          <h2 id="calendar-title">Calendar</h2>
+        </div>
 
         <div class="calendar-nav">
           <button id="cal-prev" class="btn btn-ghost" type="button" aria-label="Previous month">‹</button>
@@ -301,7 +333,7 @@
   </div>
 
   <footer class="app-footer">
-    <div class="container">NutriFit Tracker • Prototype</div>
+    <div class="container">NutriFit Tracker</div>
   </footer>
 
   <script src="app.js"></script>
