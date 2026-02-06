@@ -16,12 +16,43 @@ const state = {
   editingMealId: null,
   editingWorkoutId: null,
 
+  // Optional UI filter (set by clicking a calendar day)
+  filterDayISO: null,              // "YYYY-MM-DD" or null
+
   // calendar / modal
   calendarMonth: startOfMonth(new Date()),
   selectedDayISO: null,            // "YYYY-MM-DD"
   dayEditingMealId: null,
   dayEditingWorkoutId: null,
 };
+
+// ---------- form validity helpers ----------
+// Keeps submit buttons disabled until form fields are valid.
+const _formValidityRefreshers = Object.create(null);
+
+function attachDisableWhenInvalid(formId, submitBtnId) {
+  const form = $(formId);
+  const submit = $(submitBtnId);
+  if (!form || !submit) return;
+
+  const refresh = () => {
+    // checkValidity() respects required/min/step/etc.
+    submit.disabled = !form.checkValidity();
+  };
+
+  form.addEventListener("input", refresh);
+  form.addEventListener("change", refresh);
+  // Keep Enter key submits safe in older browsers that might not block invalid submits.
+  form.addEventListener("submit", refresh);
+
+  refresh();
+  _formValidityRefreshers[formId] = refresh;
+}
+
+function refreshFormValidity(formId) {
+  const fn = _formValidityRefreshers[formId];
+  if (typeof fn === "function") fn();
+}
 
 function safeJsonParse(value, fallback) {
   try {
@@ -149,17 +180,9 @@ function updateMeal(id, updates) {
 }
 
 function deleteMeal(id) {
-  const meal = state.meals.find(m => m.id === id);
-    if (!meal) return;
-
-    confirmationModal.show(
-      `Are you sure you want to delete the meal "${meal.name || 'Unnamed meal'}" ?`,
-      () => {
-        state.meals = state.meals.filter(m => m.id !== id);
-        saveMealsToStorage();
-        renderAll();
-      }
-    );
+  state.meals = state.meals.filter(m => m.id !== id);
+  saveMealsToStorage();
+  renderAll();
 }
 
 function addWorkout(type, duration, caloriesBurned, createdAt = Date.now()) {
@@ -180,17 +203,9 @@ function updateWorkout(id, updates) {
 }
 
 function deleteWorkout(id) {
-  const workout = state.workouts.find(w => w.id === id);
-    if (!workout) return;
-
-    confirmationModal.show(
-  `Are you sure you want to delete the workout "${workout.type || 'Workout'}" ?`,
-      () => {
-        state.workouts = state.workouts.filter(w => w.id !== id);
-        saveWorkoutsToStorage();
-        renderAll();
-      }
-    );
+  state.workouts = state.workouts.filter(w => w.id !== id);
+  saveWorkoutsToStorage();
+  renderAll();
 }
 
 // ---------- totals ----------
@@ -240,8 +255,17 @@ function renderMeals() {
   const empty = $("meal-empty");
   if (!list || !empty) return;
 
-  const mealsSorted = [...state.meals].sort((a, b) => b.createdAt - a.createdAt);
+  const filteredMeals = state.filterDayISO
+    ? state.meals.filter(m => sameISODate(m.createdAt, state.filterDayISO))
+    : state.meals;
+
+  const mealsSorted = [...filteredMeals].sort((a, b) => b.createdAt - a.createdAt);
   empty.classList.toggle("hidden", mealsSorted.length > 0);
+  if (mealsSorted.length === 0) {
+    empty.textContent = state.filterDayISO
+      ? "No meals for this date."
+      : "No meals yet — add one above.";
+  }
 
   clearEl(list);
 
@@ -267,7 +291,7 @@ function renderMeals() {
     const actions = document.createElement("div");
     actions.className = "item-actions";
 
-    const edit = makeButton("Edit", "btn-small btn-edit", () => openEditMeal(meal.id));
+    const edit = makeButton("Edit", "btn-small btn-edit", () => beginEditMeal(meal.id));
     const del = makeButton("Delete", "btn-small btn-delete", () => deleteMeal(meal.id));
     actions.appendChild(edit);
     actions.appendChild(del);
@@ -283,10 +307,19 @@ function renderWorkouts() {
   const empty = $("workout-empty");
   if (!list || !empty) return;
 
-  const workoutsSorted = [...state.workouts].sort((a, b) => b.createdAt - a.createdAt);
+  const filteredWorkouts = state.filterDayISO
+    ? state.workouts.filter(w => sameISODate(w.createdAt, state.filterDayISO))
+    : state.workouts;
+
+  const workoutsSorted = [...filteredWorkouts].sort((a, b) => b.createdAt - a.createdAt);
   const recent = workoutsSorted.slice(0, 5);
 
   empty.classList.toggle("hidden", recent.length > 0);
+  if (recent.length === 0) {
+    empty.textContent = state.filterDayISO
+      ? "No workouts for this date."
+      : "No workouts yet — add one above.";
+  }
 
   clearEl(list);
 
@@ -311,7 +344,7 @@ function renderWorkouts() {
     const actions = document.createElement("div");
     actions.className = "item-actions";
 
-    const edit = makeButton("Edit", "btn-small btn-edit", () => openEditWorkout(w.id));
+    const edit = makeButton("Edit", "btn-small btn-edit", () => beginEditWorkout(w.id));
     const del = makeButton("Delete", "btn-small btn-delete", () => deleteWorkout(w.id));
     actions.appendChild(edit);
     actions.appendChild(del);
@@ -323,85 +356,57 @@ function renderWorkouts() {
 }
 
 // ---------- editing (top forms) ----------
-function openEditMeal(id) {
+function beginEditMeal(id) {
   const meal = state.meals.find(m => m.id === id);
   if (!meal) return;
 
   state.editingMealId = id;
-  $("edit-meal-name").value = meal.name;
-  $("edit-meal-calories").value = meal.calories;
-  $("edit-meal-category").value = meal.category || "";
+  $("meal-name").value = meal.name;
+  $("meal-calories").value = meal.calories;
+  $("meal-category").value = meal.category || "";
 
+<<<<<<< Updated upstream
+  $("meal-submit").textContent = "Update Meal";
+  $("meal-cancel").classList.remove("hidden");
+=======
   $("edit-meal-modal").classList.remove("hidden");
+  refreshFormValidity("edit-meal-form");
   $("edit-meal-name")?.focus();
+>>>>>>> Stashed changes
 }
 
-function closeEditMeal() {
-  const modal = $("edit-meal-modal");
-  if (!modal) return;
-  modal.classList.add("hidden");
+function cancelEditMeal() {
   state.editingMealId = null;
-  $("edit-meal-form")?.reset();
-
+  $("meal-form").reset();
+  $("meal-submit").textContent = "Add Meal";
+  $("meal-cancel").classList.add("hidden");
 }
 
-function openEditWorkout(id) {
-  const workout = state.workouts.find(w => w.id === id);
-  if (!workout) return;
+function beginEditWorkout(id) {
+  const w = state.workouts.find(x => x.id === id);
+  if (!w) return;
 
   state.editingWorkoutId = id;
-  $("edit-workout-type").value = workout.type;
-  $("edit-workout-duration").value = workout.duration;
-  $("edit-workout-calories").value = workout.caloriesBurned;
+  $("workout-type").value = w.type;
+  $("workout-duration").value = w.duration;
+  $("workout-calories").value = w.caloriesBurned;
 
+<<<<<<< Updated upstream
+  $("workout-submit").textContent = "Update Workout";
+  $("workout-cancel").classList.remove("hidden");
+=======
   $("edit-workout-modal").classList.remove("hidden");
+  refreshFormValidity("edit-workout-form");
   $("edit-workout-type")?.focus();
+>>>>>>> Stashed changes
 }
 
-function closeEditWorkout(){
-    const modal = $("edit-workout-modal");
-    if (!modal) return;
-    modal.classList.add("hidden");
-    state.editingWorkoutId = null;
-    $("edit-workout-form")?.reset();
+function cancelEditWorkout() {
+  state.editingWorkoutId = null;
+  $("workout-form").reset();
+  $("workout-submit").textContent = "Add Workout";
+  $("workout-cancel").classList.add("hidden");
 }
-
-//----Confirmation Modal -------
-const confirmationModal = {
-    callback: null,
-
-    show(message, onConfirm, onCancel = null){
-        const modal = $("confirmation-modal");
-        const messageEl = $("confirmation-message");
-
-        if (!modal || !messageEl) return;
-
-        messageEl.textContent = message;
-        modal.classList.remove("hidden");
-
-        this.callback = { onConfirm, onCancel};
-    },
-
-    confirm(){
-        const modal = $("confirmation-modal");
-        if (modal) modal.classList.add("hidden");
-
-        if (this.callback && this.callback.onConfirm){
-            this.callback.onConfirm();
-        }
-        this.callback = null;
-    },
-
-    cancel(){
-        const modal = $("confirmation-modal");
-        if (modal) modal.classList.add("hidden");
-
-        if (this.callback && this.callback.onCancel){
-            this.callback.onCancel();
-        }
-        this.callback = null;
-    }
-};
 
 // ---------- calendar ----------
 function renderCalendar() {
@@ -445,8 +450,11 @@ function renderCalendar() {
     const cellDate = new Date(month.getFullYear(), month.getMonth(), day, 12, 0, 0, 0);
     const iso = toISODateLocal(cellDate);
 
-    const mealsCount = state.meals.filter(m => sameISODate(m.createdAt, iso)).length;
-    const workoutsCount = state.workouts.filter(w => sameISODate(w.createdAt, iso)).length;
+    const mealEntries = state.meals.filter(m => sameISODate(m.createdAt, iso));
+    const workoutEntries = state.workouts.filter(w => sameISODate(w.createdAt, iso));
+
+    const mealCalories = mealEntries.reduce((s, m) => s + (Number(m.calories) || 0), 0);
+    const workoutCalories = workoutEntries.reduce((s, w) => s + (Number(w.caloriesBurned) || 0), 0);
 
     const cell = document.createElement("button");
     cell.type = "button";
@@ -454,6 +462,7 @@ function renderCalendar() {
     cell.dataset.iso = iso;
 
     if (iso === today) cell.classList.add("cal-today");
+    if (state.filterDayISO === iso) cell.classList.add("cal-selected");
 
     if (iso > today) {
       cell.classList.add("cal-future");
@@ -468,29 +477,41 @@ function renderCalendar() {
     const badges = document.createElement("div");
     badges.className = "cal-badges";
 
-    if (mealsCount > 0) {
+    if (mealCalories > 0) {
       const b = document.createElement("span");
       b.className = "badge";
       const dot = document.createElement("span");
       dot.className = "dot dot-meal";
       b.appendChild(dot);
-      b.appendChild(document.createTextNode(`${mealsCount} meal${mealsCount === 1 ? "" : "s"}`));
+      b.appendChild(document.createTextNode(`${Math.round(mealCalories)} cal`));
       badges.appendChild(b);
     }
-    if (workoutsCount > 0) {
+    if (workoutCalories > 0) {
       const b = document.createElement("span");
       b.className = "badge";
       const dot = document.createElement("span");
       dot.className = "dot dot-workout";
       b.appendChild(dot);
-      b.appendChild(document.createTextNode(`${workoutsCount} workout${workoutsCount === 1 ? "" : "s"}`));
+      b.appendChild(document.createTextNode(`${Math.round(workoutCalories)} burned`));
       badges.appendChild(b);
     }
 
     cell.appendChild(dateEl);
     cell.appendChild(badges);
 
-    cell.addEventListener("click", () => openDayModal(iso));
+    // Clicking the cell filters the main lists; clicking the date number opens the day modal.
+    cell.addEventListener("click", () => {
+      if (iso > today) return;
+      state.filterDayISO = (state.filterDayISO === iso) ? null : iso;
+      renderMeals();
+      renderWorkouts();
+      renderCalendar();
+    });
+
+    dateEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openDayModal(iso);
+    });
     grid.appendChild(cell);
   }
 }
@@ -504,7 +525,7 @@ function shiftMonth(delta) {
 // ---------- modal: day view + edit ----------
 function openDayModal(isoDay) {
   if (isFutureISO(isoDay)) {
-    confirmationModal.show("Future days are locked. Add meals and workouts once you've actually done them." , null);
+    alert("Future days are locked. Add meals and workouts once you've actually done them.");
     return;
   }
 
@@ -627,16 +648,10 @@ function renderDayLists() {
     actions.className = "item-actions";
     actions.appendChild(makeButton("Edit", "btn-small btn-edit", () => beginDayEditMeal(m.id)));
     actions.appendChild(makeButton("Delete", "btn-small btn-delete", () => {
-      confirmationModal.show(
-              `Delete "${m.name || 'Unnamed meal'}"?`,
-              () => {
-                state.meals = state.meals.filter(meal => meal.id !== m.id);
-                saveMealsToStorage();
-                renderAll();
-                updateDaySummary();
-                renderDayLists();
-              }
-            );
+      if (!confirm("Delete this meal?")) return;
+      deleteMeal(m.id);
+      updateDaySummary();
+      renderDayLists();
     }));
 
     li.appendChild(main);
@@ -666,16 +681,10 @@ function renderDayLists() {
     actions.className = "item-actions";
     actions.appendChild(makeButton("Edit", "btn-small btn-edit", () => beginDayEditWorkout(w.id)));
     actions.appendChild(makeButton("Delete", "btn-small btn-delete", () => {
-      confirmationModal.show(
-              `Delete "${w.type || 'Workout'}"?`,
-              () => {
-                state.workouts = state.workouts.filter(workout => workout.id !== w.id);
-                saveWorkoutsToStorage();
-                renderAll();
-                updateDaySummary();
-                renderDayLists();
-              }
-            );
+      if (!confirm("Delete this workout?")) return;
+      deleteWorkout(w.id);
+      updateDaySummary();
+      renderDayLists();
     }));
 
     li.appendChild(main);
@@ -700,6 +709,7 @@ function beginDayEditMeal(id) {
 
   const submit = $("day-meal-submit");
   if (submit) submit.textContent = "Update Meal";
+  refreshFormValidity("day-meal-form");
 }
 
 function beginDayEditWorkout(id) {
@@ -718,6 +728,7 @@ function beginDayEditWorkout(id) {
 
   const submit = $("day-workout-submit");
   if (submit) submit.textContent = "Update Workout";
+  refreshFormValidity("day-workout-form");
 }
 
 function resetDayMealForm() {
@@ -725,6 +736,7 @@ function resetDayMealForm() {
   $("day-meal-form")?.reset();
   const submit = $("day-meal-submit");
   if (submit) submit.textContent = "Save Meal";
+  refreshFormValidity("day-meal-form");
 }
 
 function resetDayWorkoutForm() {
@@ -732,6 +744,7 @@ function resetDayWorkoutForm() {
   $("day-workout-form")?.reset();
   const submit = $("day-workout-submit");
   if (submit) submit.textContent = "Save Workout";
+  refreshFormValidity("day-workout-form");
 }
 
 // ---------- main render ----------
@@ -748,47 +761,45 @@ function renderAll() {
   }
 }
 
-// ---- Confirmation Modal Events ----
-function wireConfirmationModal(){
-    $("confirm-yes")?.addEventListener("click", () => {
-        confirmationModal.confirm();
-    });
-
-    $("confirm-no")?.addEventListener("click", () => {
-        if (confirmationModal.callback && !confirmationModal.callback.onConfirm) {
-            confirmationModal.confirm();
-        } else {
-            confirmationModal.cancel();
-        }
-    });
-
-    $("confirmation-modal")?.addEventListener("click", (e) => {
-        if (e.target.id === "confirmation-modal" || e.target.classList.contains("modal-backdrop")) {
-            if (confirmationModal.callback && !confirmationModal.callback.onConfirm) {
-                confirmationModal.confirm();
-            } else {
-                confirmationModal.cancel();
-            }
-        }
-    });
-}
-
 // ---------- events ----------
 function wireEvents() {
+  // Disable submit buttons until each form is valid.
+  attachDisableWhenInvalid("meal-form", "meal-submit");
+  attachDisableWhenInvalid("workout-form", "workout-submit");
+  attachDisableWhenInvalid("edit-meal-form", "edit-meal-submit");
+  attachDisableWhenInvalid("edit-workout-form", "edit-workout-submit");
+  attachDisableWhenInvalid("day-meal-form", "day-meal-submit");
+  attachDisableWhenInvalid("day-workout-form", "day-workout-submit");
+
   // Meal form (top)
   const mealForm = $("meal-form");
-  if (mealForm){
+  if (mealForm) {
     mealForm.addEventListener("submit", (e) => {
-        e.preventDefault();
+      e.preventDefault();
 
-        const name = $("meal-name").value.trim();
-        const calories = $("meal-calories").value;
-        const category = $("meal-category").value;
+      const name = $("meal-name").value.trim();
+      const calories = $("meal-calories").value;
+      const category = $("meal-category").value;
 
-        if (!name || category === "") return;
+      if (!name || category === "") return;
 
+<<<<<<< Updated upstream
+      if (state.editingMealId) {
+        updateMeal(state.editingMealId, { name, calories, category });
+        cancelEditMeal();
+        return;
+      }
+
+      addMeal(name, calories, category);
+      mealForm.reset();
+    });
+  }
+
+  $("meal-cancel")?.addEventListener("click", cancelEditMeal);
+=======
         addMeal(name, calories, category);
         mealForm.reset();
+        refreshFormValidity("meal-form");
     });
   }
 
@@ -805,6 +816,7 @@ function wireEvents() {
 
     updateMeal(state.editingMealId, { name, calories, category });
     closeEditMeal();
+    refreshFormValidity("edit-meal-form");
   });
 
   $("edit-meal-cancel")?.addEventListener("click", closeEditMeal);
@@ -812,6 +824,7 @@ function wireEvents() {
   $("edit-meal-modal")?.addEventListener("click", (e) => {
     if (e.target.classList.contains("modal-backdrop")) closeEditMeal();
   });
+>>>>>>> Stashed changes
 
   // Workout form (top)
   const workoutForm = $("workout-form");
@@ -825,11 +838,21 @@ function wireEvents() {
 
       if (!type) return;
 
+      if (state.editingWorkoutId) {
+        updateWorkout(state.editingWorkoutId, { type, duration, caloriesBurned });
+        cancelEditWorkout();
+        return;
+      }
+
       addWorkout(type, duration, caloriesBurned);
       workoutForm.reset();
+      refreshFormValidity("workout-form");
     });
   }
 
+<<<<<<< Updated upstream
+  $("workout-cancel")?.addEventListener("click", cancelEditWorkout);
+=======
   // Edit Workout Modal events
   $("edit-workout-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -843,6 +866,7 @@ function wireEvents() {
 
     updateWorkout(state.editingWorkoutId, { type, duration, caloriesBurned: calories });
     closeEditWorkout();
+    refreshFormValidity("edit-workout-form");
   });
 
   $("edit-workout-cancel")?.addEventListener("click", closeEditWorkout);
@@ -850,18 +874,15 @@ function wireEvents() {
   $("edit-workout-modal")?.addEventListener("click", (e) => {
     if (e.target.classList.contains("modal-backdrop")) closeEditWorkout();
   });
+>>>>>>> Stashed changes
 
   // Clear all
   $("clear-all")?.addEventListener("click", () => {
-    confirmationModal.show(
-          "Clear all meals and workouts? This cannot be undone.",
-          () => {
-            state.meals = [];
-            state.workouts = [];
-            clearAllStorage();
-            renderAll();
-          }
-        );
+    if (!confirm("Clear all meals and workouts?")) return;
+    state.meals = [];
+    state.workouts = [];
+    clearAllStorage();
+    renderAll();
   });
 
   // Calendar nav
@@ -875,36 +896,31 @@ function wireEvents() {
     if (t && t.dataset && t.dataset.close === "true") closeDayModal();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-        const confirmModal = $("confirmation-modal");
-        if (confirmModal && !confirmModal.classList.contains("hidden")) {
-            confirmationModal.cancel();
-        } else {
-            closeDayModal();
-        }
-    }
+    if (e.key === "Escape") closeDayModal();
   });
 
   // Modal open forms
   $("open-day-meal")?.addEventListener("click", () => {
     if (state.selectedDayISO && isFutureISO(state.selectedDayISO)) {
-      confirmationModal.show("Future days are locked. Add meals and workouts once you've actually done them.", null);
+      alert("Future days are locked. Add meals and workouts once you've actually done them.");
       return;
     }
     $("day-meal-form-wrap")?.classList.remove("hidden");
     $("day-workout-form-wrap")?.classList.add("hidden");
     resetDayMealForm();
+    refreshFormValidity("day-meal-form");
     $("day-meal-name")?.focus();
   });
 
   $("open-day-workout")?.addEventListener("click", () => {
     if (state.selectedDayISO && isFutureISO(state.selectedDayISO)) {
-      confirmationModal.show("Future days are locked. Add meals and workouts once you've actually done them.", null);
+      alert("Future days are locked. Add meals and workouts once you've actually done them.");
       return;
     }
     $("day-workout-form-wrap")?.classList.remove("hidden");
     $("day-meal-form-wrap")?.classList.add("hidden");
     resetDayWorkoutForm();
+    refreshFormValidity("day-workout-form");
     $("day-workout-type")?.focus();
   });
 
@@ -923,7 +939,7 @@ function wireEvents() {
     e.preventDefault();
     if (!state.selectedDayISO) return;
     if (isFutureISO(state.selectedDayISO)) {
-      confirmationModal.show("Future days are locked. Add meals and workouts once you've actually done them.", null);
+      alert("Future days are locked. Add meals and workouts once you've actually done them.");
       return;
     }
 
@@ -954,7 +970,7 @@ function wireEvents() {
     e.preventDefault();
     if (!state.selectedDayISO) return;
     if (isFutureISO(state.selectedDayISO)) {
-      confirmationModal.show("Future days are locked. Add meals and workouts once you've actually done them.", null);
+      alert("Future days are locked. Add meals and workouts once you've actually done them.");
       return;
     }
 
@@ -986,7 +1002,6 @@ function wireEvents() {
 function init() {
   loadStateFromStorage();
   wireEvents();
-  wireConfirmationModal();
   renderAll();
 }
 
