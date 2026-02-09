@@ -18,7 +18,8 @@ function captureConsole() {
 
 function runTests() {
     captureConsole();
-    runNutriFitTests();
+    const runner = new TestRunner();
+    runner.runAllTests();
 }
 
 // Auto-run on load and wire up button
