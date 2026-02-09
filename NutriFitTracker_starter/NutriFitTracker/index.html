@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,6 +22,9 @@
             <p class="tagline">Track meals, workouts, and your net calories.</p>
           </div>
         </div>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
       </div>
     </div>
   </header>
@@ -35,6 +39,13 @@
         </div>
 
         <form id="meal-form" class="form">
+          <label>
+            Preset meals
+            <select id="meal-preset">
+              <option value="">-- Select preset or type custom --</option>
+            </select>
+          </label>
+
           <label>
             Meal name
             <input id="meal-name" type="text" placeholder="e.g., Chicken bowl" required />
@@ -57,7 +68,9 @@
           </label>
 
           <button id="meal-submit" type="submit" class="btn btn-primary">Add Meal</button>
-          <button id="meal-cancel" type="button" class="btn btn-ghost hidden">Cancel Edit</button>
+          <button id="save-preset" type="button" class="btn btn-ghost">Save as Preset</button>
+          <button id="manage-presets" type="button" class="btn btn-ghost">Manage Presets</button>
+          <button id="copy-yesterday" type="button" class="btn btn-ghost">📋 Copy Yesterday's Meals</button>
         </form>
 
         <div class="history">
@@ -78,6 +91,13 @@
 
         <form id="workout-form" class="form">
           <label>
+            Preset workouts
+            <select id="workout-preset">
+              <option value="">-- Select preset or type custom --</option>
+            </select>
+          </label>
+
+          <label>
             Workout type
             <input id="workout-type" type="text" placeholder="e.g., Run" required />
           </label>
@@ -93,7 +113,9 @@
           </label>
 
           <button id="workout-submit" type="submit" class="btn btn-primary">Add Workout</button>
-          <button id="workout-cancel" type="button" class="btn btn-ghost hidden">Cancel Edit</button>
+          <button id="save-workout-preset" type="button" class="btn btn-ghost">Save as Preset</button>
+          <button id="manage-workout-presets" type="button" class="btn btn-ghost">Manage Presets</button>
+          <button id="copy-yesterday-workouts" type="button" class="btn btn-ghost">📋 Copy Yesterday's Workouts</button>
         </form>
 
         <div class="history">
@@ -139,10 +161,84 @@
         </div>
 
         <div class="dash-actions">
+          <button id="set-goals" class="btn btn-primary" type="button">Set This Week's Goals</button>
           <button id="clear-all" class="btn btn-danger" type="button">Clear All Data</button>
+        </div>
+
+        <div class="streak-display">
+          <div class="streak-icon">🔥</div>
+          <div class="streak-content">
+            <div class="streak-label">Logging Streak</div>
+            <div id="streak-count" class="streak-value">0 days</div>
+          </div>
         </div>
       </section>
     </div>
+
+    <!-- Weekly Goals -->
+    <section class="panel goals-panel" aria-labelledby="goals-section-title">
+      <div class="panel-header">
+        <div class="panel-icon">🎯</div>
+        <h2 id="goals-section-title">Weekly Goals</h2>
+      </div>
+      <div class="goals-grid">
+        <div class="goal-item">
+          <div class="goal-label">Meals This Week</div>
+          <div class="goal-progress">
+            <div class="goal-stats">
+              <span id="weekly-meals" class="goal-value">0</span>
+              <span class="goal-target">/ <span id="goal-meals-target">21</span></span>
+            </div>
+            <div class="goal-bar">
+              <div id="weekly-meals-bar" class="goal-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-label">Workouts This Week</div>
+          <div class="goal-progress">
+            <div class="goal-stats">
+              <span id="weekly-workouts" class="goal-value">0</span>
+              <span class="goal-target">/ <span id="goal-workouts-target">7</span></span>
+            </div>
+            <div class="goal-bar">
+              <div id="weekly-workouts-bar" class="goal-bar-fill goal-bar-workout"></div>
+            </div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-label">Net Calories This Week</div>
+          <div id="weekly-net" class="goal-value">0</div>
+        </div>
+        <div class="goal-item water-tracker">
+          <div class="goal-label">Water Today (glasses)</div>
+          <div class="water-controls">
+            <button id="water-minus" class="btn-water" type="button">−</button>
+            <div id="water-count" class="water-value">0</div>
+            <button id="water-plus" class="btn-water" type="button">+</button>
+          </div>
+          <div class="water-glasses" id="water-glasses"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analytics -->
+    <section class="panel analytics-panel" aria-labelledby="analytics-title">
+      <div class="panel-header">
+        <div class="panel-icon">📈</div>
+        <h2 id="analytics-title">Analytics</h2>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h3 class="chart-title">7-Day Calorie Trend</h3>
+          <canvas id="trend-chart"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3 class="chart-title">Meal Categories</h3>
+          <canvas id="category-chart"></canvas>
+        </div>
+      </div>
+    </section>
 
     <!-- Calendar -->
     <section class="panel calendar" aria-labelledby="calendar-title">
@@ -164,7 +260,26 @@
       <div class="calendar-legend">
         <span class="legend-item"><span class="dot dot-meal"></span> Meals</span>
         <span class="legend-item"><span class="dot dot-workout"></span> Workouts</span>
-        <span class="legend-hint muted">Click a past day or today to view, add, or edit.</span>
+        <span class="legend-hint muted">Click a day to view/edit. Shift+click to filter meals/workouts.</span>
+      </div>
+    </section>
+
+    <!-- Achievements & Motivation -->
+    <section class="panel motivation-panel" aria-labelledby="motivation-title">
+      <div class="panel-header">
+        <div class="panel-icon">🏆</div>
+        <h2 id="motivation-title">Achievements & Motivation</h2>
+      </div>
+      
+      <div class="motivation-quote">
+        <div class="quote-icon">💡</div>
+        <p id="daily-quote" class="quote-text">"The only bad workout is the one that didn't happen."</p>
+      </div>
+      
+      <div class="badges-grid" id="badges-grid"></div>
+      
+      <div class="share-section">
+        <button id="share-progress" class="btn btn-primary" type="button">📤 Share My Progress</button>
       </div>
     </section>
   </main>
@@ -328,6 +443,138 @@
       <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
         <button type="button" id="confirm-no" class="btn btn-ghost">Cancel</button>
         <button type="button" id="confirm-yes" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goals Modal -->
+  <div id="goals-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="goals-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <h3 id="goals-title">Set Weekly Goals</h3>
+        <button class="icon-btn" id="goals-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="goals-form" class="form">
+          <label>
+            Meals per week
+            <input id="goal-meals" type="number" min="1" step="1" placeholder="e.g., 21" required />
+          </label>
+          <label>
+            Workouts per week
+            <input id="goal-workouts" type="number" min="1" step="1" placeholder="e.g., 7" required />
+          </label>
+          <button id="goals-submit" type="submit" class="btn btn-primary">Save Goals</button>
+          <button id="goals-cancel" type="button" class="btn btn-ghost">Cancel</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Presets Modal -->
+  <div id="presets-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="presets-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-head">
+        <h3 id="presets-title">Manage Meal Presets</h3>
+        <button class="icon-btn" id="presets-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="presets-empty">No presets saved yet.</p>
+        <ul id="presets-list" class="list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Preset Modal -->
+  <div id="edit-preset-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="edit-preset-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <h3 id="edit-preset-title">Edit Preset</h3>
+        <button class="icon-btn" id="edit-preset-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-preset-form" class="form">
+          <label>
+            Meal name
+            <input id="edit-preset-name" type="text" required />
+          </label>
+          <label>
+            Calories
+            <input id="edit-preset-calories" type="number" min="0" step="1" required />
+          </label>
+          <label>
+            Category
+            <select id="edit-preset-category" required>
+              <option value="" disabled>Select a category</option>
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+          </label>
+          <button id="edit-preset-submit" type="submit" class="btn btn-primary">Update Preset</button>
+          <button id="edit-preset-cancel" type="button" class="btn btn-ghost">Cancel</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Workout Presets Modal -->
+  <div id="workout-presets-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="workout-presets-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-head">
+        <h3 id="workout-presets-title">Manage Workout Presets</h3>
+        <button class="icon-btn" id="workout-presets-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="workout-presets-empty">No presets saved yet.</p>
+        <ul id="workout-presets-list" class="list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Workout Preset Modal -->
+  <div id="edit-workout-preset-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="edit-workout-preset-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <h3 id="edit-workout-preset-title">Edit Workout Preset</h3>
+        <button class="icon-btn" id="edit-workout-preset-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-workout-preset-form" class="form">
+          <label>
+            Workout type
+            <input id="edit-workout-preset-type" type="text" required />
+          </label>
+          <label>
+            Duration (min)
+            <input id="edit-workout-preset-duration" type="number" min="0" step="1" required />
+          </label>
+          <label>
+            Calories burned
+            <input id="edit-workout-preset-calories" type="number" min="0" step="1" required />
+          </label>
+          <button id="edit-workout-preset-submit" type="submit" class="btn btn-primary">Update Preset</button>
+          <button id="edit-workout-preset-cancel" type="button" class="btn btn-ghost">Cancel</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="success-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-body" style="text-align: center; padding: 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+        <h3 style="margin-bottom: 0.5rem;">Success!</h3>
+        <p id="success-message" class="muted">Preset saved successfully.</p>
+        <button id="success-ok" type="button" class="btn btn-primary" style="margin-top: 1.5rem;">OK</button>
       </div>
     </div>
   </div>
