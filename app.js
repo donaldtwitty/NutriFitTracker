@@ -391,6 +391,7 @@ function setWaterCount(count) {
   state.water[today] = Math.max(0, count);
   saveWaterToStorage();
   renderWaterTracker();
+  renderCalendar();
 }
 
 function renderWaterTracker() {

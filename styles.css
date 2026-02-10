@@ -1228,11 +1228,17 @@ select {
 @media (max-width: 480px) {
     .btn {
         width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .btn-small {
+        padding: 0.375rem 0.625rem;
+        font-size: 0.75rem;
     }
 
     .item-actions {
         flex-direction: column;
-        width: 100%;
     }
 
     .item-actions .btn-small {
