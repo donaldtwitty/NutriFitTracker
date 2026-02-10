@@ -803,7 +803,7 @@ select {
 
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
 }
 
@@ -812,6 +812,8 @@ select {
     border-radius: var(--radius);
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .chart-title {
@@ -824,6 +826,8 @@ select {
 
 .chart-container canvas {
     max-height: 300px;
+    max-width: 100%;
+    height: auto !important;
 }
 
 /* Calendar */
