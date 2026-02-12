@@ -1174,6 +1174,35 @@ const confirmationModal = {
     }
 };
 
+function renderDayWaterTracker() {
+  const iso = state.selectedDayISO;
+  if (!iso) return;
+  
+  const count = state.water[iso] || 0;
+  setText("day-water-count", count);
+  
+  const container = $("day-water-glasses");
+  if (!container) return;
+  
+  clearEl(container);
+  for (let i = 0; i < 8; i++) {
+    const glass = document.createElement("div");
+    glass.className = i < count ? "water-glass filled" : "water-glass";
+    glass.textContent = "💧";
+    container.appendChild(glass);
+  }
+}
+
+function setDayWaterCount(count) {
+  const iso = state.selectedDayISO;
+  if (!iso) return;
+  
+  state.water[iso] = Math.max(0, count);
+  saveWaterToStorage();
+  renderDayWaterTracker();
+  renderCalendar();
+}
+
 // ---------- calendar ----------
 function renderCalendar() {
   const grid = $("calendar-grid");
@@ -1331,6 +1360,7 @@ function openDayModal(isoDay) {
 
   updateDaySummary();
   renderDayLists();
+  renderDayWaterTracker();
 
   modal.classList.remove("hidden");
 }
@@ -1842,6 +1872,35 @@ function wireEvents() {
       showSuccessModal("Workout preset updated successfully!");
     });
   }
+
+  // Water tracker in day modal
+  $("day-water-plus")?.addEventListener("click", () => {
+    const iso = state.selectedDayISO;
+    if (!iso) return;
+    const count = state.water[iso] || 0;
+    setDayWaterCount(count + 1);
+  });
+  $("day-water-minus")?.addEventListener("click", () => {
+    const iso = state.selectedDayISO;
+    if (!iso) return;
+    const count = state.water[iso] || 0;
+    setDayWaterCount(count - 1);
+  });
+  
+  // Preset dropdowns in day modal
+  $("day-meal-preset")?.addEventListener("change", (e) => {
+    if (e.target.value) {
+      applyMealPreset(e.target.value, $("day-meal-name"), $("day-meal-calories"), $("day-meal-category"));
+      validateForm($("day-meal-form"), $("day-meal-submit"));
+    }
+  });
+  
+  $("day-workout-preset")?.addEventListener("change", (e) => {
+    if (e.target.value) {
+      applyWorkoutPreset(e.target.value, $("day-workout-type"), $("day-workout-duration"), $("day-workout-calories"));
+      validateForm($("day-workout-form"), $("day-workout-submit"));
+    }
+  });
 
   // Calendar nav
   $("cal-prev")?.addEventListener("click", () => shiftMonth(-1));

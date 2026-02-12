@@ -367,6 +367,12 @@
           <h4 class="subhead">Meal</h4>
           <form id="day-meal-form" class="form compact">
             <label>
+              Preset meals
+              <select id="day-meal-preset">
+                <option value="">-- Select preset or type custom --</option>
+              </select>
+            </label>
+            <label>
               Meal name
               <input id="day-meal-name" type="text" required />
             </label>
@@ -393,6 +399,12 @@
           <h4 class="subhead">Workout</h4>
           <form id="day-workout-form" class="form compact">
             <label>
+              Preset workouts
+              <select id="day-workout-preset">
+                <option value="">-- Select preset or type custom --</option>
+              </select>
+            </label>
+            <label>
               Workout type
               <input id="day-workout-type" type="text" required />
             </label>
@@ -412,6 +424,16 @@
         <div class="day-summary">
           <h4 class="subhead">That day</h4>
           <div id="day-summary" class="muted">No entries yet.</div>
+
+          <div class="goal-item water-tracker" style="margin: 1rem 0;">
+            <div class="goal-label">Water (glasses)</div>
+            <div class="water-controls">
+              <button id="day-water-minus" class="btn-water" type="button">−</button>
+              <div id="day-water-count" class="water-value">0</div>
+              <button id="day-water-plus" class="btn-water" type="button">+</button>
+            </div>
+            <div class="water-glasses" id="day-water-glasses"></div>
+          </div>
 
           <div class="day-lists">
             <div class="day-list-block">
